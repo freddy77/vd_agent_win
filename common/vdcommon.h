@@ -21,7 +21,7 @@
 #pragma warning(disable:4200)
 
 #include <windows.h>
-#include "vd_agent.h"
+#include "vdagent.h"
 #include "vdlog.h"
 
 #define VD_SERVICE_PIPE_NAME   TEXT("\\\\.\\pipe\\vdservicepipe")
