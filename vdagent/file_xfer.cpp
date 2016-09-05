@@ -33,6 +33,12 @@
 #include "file_xfer.h"
 #include "as_user.h"
 
+#define FILENAME_RESERVED_CHAR_LIST \
+    ":" /* streams and devices */ \
+    "/\\" /* components separator */ \
+    "?*" /* wildcards */ \
+    "<>\"|" /* reserved to shell */
+
 void FileXfer::reset()
 {
     FileXferTasks::iterator iter;
@@ -72,6 +78,10 @@ void FileXfer::handle_start(VDAgentFileXferStartMessage* start,
         return;
     }
     vd_printf("%u %s (%" PRIu64 ")", start->id, file_name, file_size);
+    if (strcspn(file_name, FILENAME_RESERVED_CHAR_LIST) != strlen(file_name)) {
+        vd_printf("filename contains invalid characters");
+        return;
+    }
     if (!as_user.begin()) {
         vd_printf("as_user failed");
         return;
