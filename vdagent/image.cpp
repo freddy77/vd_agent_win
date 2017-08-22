@@ -23,8 +23,6 @@
 #include "image.h"
 #include "imagepng.h"
 
-ImageCoder *create_bitmap_coder();
-
 static ImageCoder *get_coder(uint32_t vdagent_type)
 {
     switch (vdagent_type) {

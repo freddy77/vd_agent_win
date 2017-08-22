@@ -18,6 +18,7 @@
 #undef NDEBUG
 #include <assert.h>
 #include <vector>
+#include <memory>
 
 #include "vdcommon.h"
 #include "image.h"
@@ -42,7 +43,7 @@ save_dib_to_file(ImageCoder& coder, const uint8_t *raw_dib, const char *filename
 
 int main(int argc, char **argv)
 {
-    ImageCoder *coder = create_png_coder();
+    std::unique_ptr<ImageCoder> coder(create_png_coder());
 
     assert(coder);
     if (argc < 2) {
@@ -68,19 +69,10 @@ int main(int argc, char **argv)
     memset(&out[0], 0xcc, dib_size);
     coder->get_dib_data(&out[0], &data[0], len);
 
-    // looks like many tools wants this header so craft it
-    BITMAPFILEHEADER head;
-    memset(&head, 0, sizeof(head));
-    head.bfType = 'B'+'M'*256u;
-    head.bfSize = sizeof(head) + dib_size;
-    BITMAPINFOHEADER& info(*(BITMAPINFOHEADER*)&out[0]);
-    head.bfOffBits = sizeof(head) + sizeof(BITMAPINFOHEADER) + 4 * info.biClrUsed;
-
-    f = fopen(argc > 2 ? argv[2] : "out.bmp", "wb");
-    assert(f);
-    assert(fwrite(&head, 1, sizeof(head), f) == sizeof(head));
-    assert(fwrite(&out[0], 1, dib_size, f) == dib_size);
-    fclose(f);
+    // write BMP file
+    std::unique_ptr<ImageCoder> bmp_coder(create_bitmap_coder());
+    assert(bmp_coder);
+    save_dib_to_file(*bmp_coder, &out[0], argc > 2 ? argv[2] : "out.bmp");
 
     // convert back to PNG
     save_dib_to_file(*coder, &out[0], argc > 3 ? argv[3] : "out.png");

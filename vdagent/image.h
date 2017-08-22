@@ -39,6 +39,8 @@ static inline size_t compute_dib_stride(unsigned int width, unsigned int bit_cou
     return ((width * bit_count + 31u) & ~31u) / 8u;
 }
 
+ImageCoder *create_bitmap_coder();
+
 /**
  * Returns image to put in the clipboard.
  *
