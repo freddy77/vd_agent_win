@@ -150,6 +150,8 @@ void BitmapCoder::get_dib_data(uint8_t *dib, const uint8_t *data, size_t size)
 
 uint8_t *BitmapCoder::from_bitmap(const BITMAPINFO& info, const void *bits, long &size)
 {
+    BITMAPFILEHEADER file_hdr;
+
     const BITMAPINFOHEADER& head(info.bmiHeader);
 
     const DWORD max_palette_colors = head.biBitCount <= 8 ? 1 << head.biBitCount : 0;
@@ -157,14 +159,21 @@ uint8_t *BitmapCoder::from_bitmap(const BITMAPINFO& info, const void *bits, long
 
     const size_t stride = compute_dib_stride(head.biWidth, head.biBitCount);
     const size_t image_size = stride * head.biHeight;
-    size = sizeof(head) + palette_size + image_size;
+    size = sizeof(file_hdr) + sizeof(head) + palette_size + image_size;
+
+    file_hdr.bfType = 'B' + 'M'*256u;
+    file_hdr.bfSize = size;
+    file_hdr.bfReserved1 = 0;
+    file_hdr.bfReserved2 = 0;
+    file_hdr.bfOffBits = sizeof(file_hdr) + sizeof(head) + palette_size;
 
     uint8_t *data = (uint8_t *) malloc(size);
     if (!data) {
         return NULL;
     }
-    memcpy(data, &info, sizeof(head) + palette_size);
-    memcpy(data + sizeof(head) + palette_size, bits, image_size);
+    memcpy(data, &file_hdr, sizeof(file_hdr));
+    memcpy(data + sizeof(file_hdr), &info, sizeof(head) + palette_size);
+    memcpy(data + sizeof(file_hdr) + sizeof(head) + palette_size, bits, image_size);
     return data;
 }
 
