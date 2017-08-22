@@ -23,6 +23,23 @@
 #include "image.h"
 #include "imagepng.h"
 
+static void
+save_dib_to_file(ImageCoder& coder, const uint8_t *raw_dib, const char *filename)
+{
+    const BITMAPINFO& info(*(BITMAPINFO*) raw_dib);
+    const uint8_t *raw_bits = &raw_dib[sizeof(BITMAPINFOHEADER) + 4 * info.bmiHeader.biClrUsed];
+
+    long size = 0;
+    uint8_t *raw_file = coder.from_bitmap(info, raw_bits, size);
+    assert(raw_file && size > 0);
+
+    FILE *f = fopen(filename, "wb");
+    assert(f);
+    assert(fwrite(raw_file, 1, size, f) == (unsigned long) size);
+    fclose(f);
+    free(raw_file);
+}
+
 int main(int argc, char **argv)
 {
     ImageCoder *coder = create_png_coder();
@@ -66,16 +83,7 @@ int main(int argc, char **argv)
     fclose(f);
 
     // convert back to PNG
-    long png_size = 0;
-    uint8_t *png = coder->from_bitmap(*((BITMAPINFO*)&out[0]), &out[sizeof(BITMAPINFOHEADER) + 4 * info.biClrUsed], png_size);
-    assert(png && png_size > 0);
-
-    f = fopen(argc > 3 ? argv[3] : "out.png", "wb");
-    assert(f);
-    assert(fwrite(png, 1, png_size, f) == (unsigned long) png_size);
-    fclose(f);
-    free(png);
-    png = NULL;
+    save_dib_to_file(*coder, &out[0], argc > 3 ? argv[3] : "out.png");
 
     return 0;
 }
