@@ -89,8 +89,7 @@ private:
     void on_clipboard_grab();
     void on_clipboard_request(UINT format);
     void on_clipboard_release();
-    DWORD get_buttons_change(DWORD last_buttons_state, DWORD new_buttons_state,
-                             DWORD mask, DWORD down_flag, DWORD up_flag);
+    DWORD get_buttons_change(DWORD mask, DWORD down_flag, DWORD up_flag);
     static HGLOBAL utf8_alloc(LPCSTR data, int size);
     static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
     static DWORD WINAPI event_thread_proc(LPVOID param);
@@ -130,10 +129,8 @@ private:
     int _system_version;
     int _clipboard_owner;
     DWORD _clipboard_tick;
-    DWORD _buttons_state;
-    ULONG _mouse_x;
-    ULONG _mouse_y;
-    INPUT _input;
+    VDAgentMouseState _new_mouse = {};
+    VDAgentMouseState _last_mouse = {};
     DWORD _input_time;
     HANDLE _control_event;
     HANDLE _stop_event;
@@ -190,9 +187,6 @@ VDAgent::VDAgent()
     , _remove_clipboard_listener (NULL)
     , _clipboard_owner (owner_none)
     , _clipboard_tick (0)
-    , _buttons_state (0)
-    , _mouse_x (0)
-    , _mouse_y (0)
     , _input_time (0)
     , _control_event (NULL)
     , _stop_event (NULL)
@@ -220,7 +214,6 @@ VDAgent::VDAgent()
         swprintf_s(log_path, MAX_PATH, VD_AGENT_LOG_PATH, temp_path);
         _log = VDLog::get(log_path);
     }
-    ZeroMemory(&_input, sizeof(_input));
     ZeroMemory(&_read_overlapped, sizeof(_read_overlapped));
     ZeroMemory(&_write_overlapped, sizeof(_write_overlapped));
     ZeroMemory(_read_buf, sizeof(_read_buf));
@@ -521,13 +514,12 @@ void VDAgent::event_dispatcher(DWORD timeout, DWORD wake_mask)
     }
 }
 
-DWORD VDAgent::get_buttons_change(DWORD last_buttons_state, DWORD new_buttons_state,
-                                  DWORD mask, DWORD down_flag, DWORD up_flag)
+DWORD VDAgent::get_buttons_change(DWORD mask, DWORD down_flag, DWORD up_flag)
 {
     DWORD ret = 0;
-    if (!(last_buttons_state & mask) && (new_buttons_state & mask)) {
+    if (!(_last_mouse.buttons & mask) && (_new_mouse.buttons & mask)) {
         ret = down_flag;
-    } else if ((last_buttons_state & mask) && !(new_buttons_state & mask)) {
+    } else if ((_last_mouse.buttons & mask) && !(_new_mouse.buttons & mask)) {
         ret = up_flag;
     }
     return ret;
@@ -535,19 +527,65 @@ DWORD VDAgent::get_buttons_change(DWORD last_buttons_state, DWORD new_buttons_st
 
 bool VDAgent::send_input()
 {
+    DisplayMode* mode = NULL;
+    DWORD mouse_move = 0;
+    DWORD buttons_change = 0;
+    DWORD mouse_wheel = 0;
     bool ret = true;
-    _desktop_layout->lock();
+    INPUT input;
+
     if (_pending_input) {
         if (KillTimer(_hwnd, VD_TIMER_ID)) {
             _pending_input = false;
         } else {
             vd_printf("KillTimer failed: %lu", GetLastError());
             _running = false;
-            _desktop_layout->unlock();
             return false;
         }
     }
-    if (!SendInput(1, &_input, sizeof(INPUT))) {
+
+    ASSERT(_desktop_layout);
+    _desktop_layout->lock();
+    if (_new_mouse.display_id < _desktop_layout->get_display_count()) {
+        mode = _desktop_layout->get_display(_new_mouse.display_id);
+    }
+    if (!mode || !mode->get_attached()) {
+        _desktop_layout->unlock();
+        return true;
+    }
+    ZeroMemory(&input, sizeof(INPUT));
+    input.type = INPUT_MOUSE;
+    if (_new_mouse.x != _last_mouse.x || _new_mouse.y != _last_mouse.y) {
+        DWORD w = _desktop_layout->get_total_width();
+        DWORD h = _desktop_layout->get_total_height();
+        w = (w > 1) ? w-1 : 1; /* coordinates are 0..w-1, protect w==0 */
+        h = (h > 1) ? h-1 : 1; /* coordinates are 0..h-1, protect h==0 */
+        mouse_move = MOUSEEVENTF_MOVE;
+        input.mi.dx = (mode->get_pos_x() + _new_mouse.x) * 0xffff / w;
+        input.mi.dy = (mode->get_pos_y() + _new_mouse.y) * 0xffff / h;
+    }
+    if (_new_mouse.buttons != _last_mouse.buttons) {
+        buttons_change = get_buttons_change(VD_AGENT_LBUTTON_MASK,
+                                            MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP) |
+                         get_buttons_change(VD_AGENT_MBUTTON_MASK,
+                                            MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP) |
+                         get_buttons_change(VD_AGENT_RBUTTON_MASK,
+                                            MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP);
+        mouse_wheel = get_buttons_change(VD_AGENT_UBUTTON_MASK | VD_AGENT_DBUTTON_MASK,
+                                         MOUSEEVENTF_WHEEL, 0);
+        if (mouse_wheel) {
+            if (_new_mouse.buttons & VD_AGENT_UBUTTON_MASK) {
+                input.mi.mouseData = WHEEL_DELTA;
+            } else if (_new_mouse.buttons & VD_AGENT_DBUTTON_MASK) {
+                input.mi.mouseData = (DWORD)(-WHEEL_DELTA);
+            }
+        }
+    }
+
+    input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK | mouse_move |
+                       mouse_wheel | buttons_change;
+
+    if (!SendInput(1, &input, sizeof(INPUT))) {
         DWORD err = GetLastError();
         // Don't stop agent due to UIPI blocking, which is usually only for specific windows
         // of system security applications (anti-viruses etc.)
@@ -555,6 +593,8 @@ bool VDAgent::send_input()
             vd_printf("SendInput failed: %lu", err);
             ret = _running = false;
         }
+    } else {
+        _last_mouse = _new_mouse;
     }
     _input_time = GetTickCount();
     _desktop_layout->unlock();
@@ -563,71 +603,26 @@ bool VDAgent::send_input()
 
 bool VDAgent::handle_mouse_event(VDAgentMouseState* state)
 {
-    DisplayMode* mode = NULL;
-    DWORD mouse_move = 0;
-    DWORD buttons_change = 0;
-    DWORD mouse_wheel = 0;
-    bool ret = true;
+    _new_mouse = *state;
+    if (_new_mouse.buttons != _last_mouse.buttons) {
+        return send_input();
+    }
 
-    ASSERT(_desktop_layout);
-    _desktop_layout->lock();
-    if (state->display_id < _desktop_layout->get_display_count()) {
-        mode = _desktop_layout->get_display(state->display_id);
-    }
-    if (!mode || !mode->get_attached()) {
-        _desktop_layout->unlock();
-        return true;
-    }
-    ZeroMemory(&_input, sizeof(INPUT));
-    _input.type = INPUT_MOUSE;
-    if (state->x != _mouse_x || state->y != _mouse_y) {
-        DWORD w = _desktop_layout->get_total_width();
-        DWORD h = _desktop_layout->get_total_height();
-        w = (w > 1) ? w-1 : 1; /* coordinates are 0..w-1, protect w==0 */
-        h = (h > 1) ? h-1 : 1; /* coordinates are 0..h-1, protect h==0 */
-        _mouse_x = state->x;
-        _mouse_y = state->y;
-        mouse_move = MOUSEEVENTF_MOVE;
-        _input.mi.dx = (mode->get_pos_x() + _mouse_x) * 0xffff / w;
-        _input.mi.dy = (mode->get_pos_y() + _mouse_y) * 0xffff / h;
-    }
-    if (state->buttons != _buttons_state) {
-        buttons_change = get_buttons_change(_buttons_state, state->buttons, VD_AGENT_LBUTTON_MASK,
-                                            MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP) |
-                         get_buttons_change(_buttons_state, state->buttons, VD_AGENT_MBUTTON_MASK,
-                                            MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP) |
-                         get_buttons_change(_buttons_state, state->buttons, VD_AGENT_RBUTTON_MASK,
-                                            MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP);
-        mouse_wheel = get_buttons_change(_buttons_state, state->buttons,
-                                         VD_AGENT_UBUTTON_MASK | VD_AGENT_DBUTTON_MASK,
-                                         MOUSEEVENTF_WHEEL, 0);
-        if (mouse_wheel) {
-            if (state->buttons & VD_AGENT_UBUTTON_MASK) {
-                _input.mi.mouseData = WHEEL_DELTA;
-            } else if (state->buttons & VD_AGENT_DBUTTON_MASK) {
-                _input.mi.mouseData = (DWORD)(-WHEEL_DELTA);
+    if (_new_mouse.x != _last_mouse.x || _new_mouse.y != _last_mouse.y) {
+        if (GetTickCount() - _input_time > VD_INPUT_INTERVAL_MS) {
+            return send_input();
+        }
+
+        if (!_pending_input) {
+            if (!SetTimer(_hwnd, VD_TIMER_ID, VD_INPUT_INTERVAL_MS, NULL)) {
+                vd_printf("SetTimer failed: %lu", GetLastError());
+                _running = false;
+                return false;
             }
-        }
-        _buttons_state = state->buttons;
-    }
-
-    _input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK | mouse_move |
-                        mouse_wheel | buttons_change;
-
-    if ((mouse_move && GetTickCount() - _input_time > VD_INPUT_INTERVAL_MS) || buttons_change ||
-                                                                                     mouse_wheel) {
-        ret = send_input();
-    } else if (!_pending_input) {
-        if (SetTimer(_hwnd, VD_TIMER_ID, VD_INPUT_INTERVAL_MS, NULL)) {
             _pending_input = true;
-        } else {
-            vd_printf("SetTimer failed: %lu", GetLastError());
-            _running = false;
-            ret = false;
         }
     }
-    _desktop_layout->unlock();
-    return ret;
+    return true;
 }
 
 bool VDAgent::handle_mon_config(VDAgentMonitorsConfig* mon_config, uint32_t port)
