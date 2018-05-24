@@ -99,7 +99,6 @@ private:
     void dispatch_message(VDAgentMessage* msg, uint32_t port);
     uint32_t get_clipboard_format(uint32_t type) const;
     uint32_t get_clipboard_type(uint32_t format) const;
-    DWORD get_cximage_format(uint32_t type) const;
     enum { owner_none, owner_guest, owner_client };
     void set_clipboard_owner(int new_owner);
     enum { CONTROL_STOP, CONTROL_RESET, CONTROL_DESKTOP_SWITCH, CONTROL_LOGON, CONTROL_CLIPBOARD };
