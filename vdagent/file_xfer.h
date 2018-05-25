@@ -19,6 +19,7 @@
 #define _H_FILE_XFER
 
 #include <map>
+#include <memory>
 #include "vdcommon.h"
 
 struct FileXferTask {
@@ -40,7 +41,7 @@ struct FileXferTask {
     void success();
 };
 
-typedef std::map<uint32_t, FileXferTask*> FileXferTasks;
+typedef std::map<uint32_t, std::shared_ptr<FileXferTask> > FileXferTasks;
 
 class FileXfer {
 public:

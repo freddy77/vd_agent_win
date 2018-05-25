@@ -41,19 +41,11 @@
 
 void FileXfer::reset()
 {
-    FileXferTasks::iterator iter;
-    FileXferTask* task;
-
-    for (iter = _tasks.begin(); iter != _tasks.end(); iter++) {
-        task = iter->second;
-        delete task;
-    }
     _tasks.clear();
 }
 
 FileXfer::~FileXfer()
 {
-    reset();
 }
 
 void FileXfer::handle_start(VDAgentFileXferStartMessage* start,
@@ -63,7 +55,6 @@ void FileXfer::handle_start(VDAgentFileXferStartMessage* start,
     TCHAR file_path[MAX_PATH];
     char file_name[MAX_PATH];
     ULARGE_INTEGER free_bytes;
-    FileXferTask* task;
     uint64_t file_size;
     HANDLE handle;
     AsUser as_user;
@@ -146,7 +137,7 @@ void FileXfer::handle_start(VDAgentFileXferStartMessage* start,
         vd_printf("Failed creating %ls. More than 63 copies exist?", file_path);
         return;
     }
-    task = new FileXferTask(handle, file_size, file_path);
+    auto task = std::make_shared<FileXferTask>(handle, file_size, file_path);
     _tasks[start->id] = task;
     status->result = VD_AGENT_FILE_XFER_STATUS_CAN_SEND_DATA;
 }
@@ -155,7 +146,6 @@ bool FileXfer::handle_data(VDAgentFileXferDataMessage* data,
                            VDAgentFileXferStatusMessage* status)
 {
     FileXferTasks::iterator iter;
-    FileXferTask* task = NULL;
     DWORD written;
 
     status->id = data->id;
@@ -163,9 +153,9 @@ bool FileXfer::handle_data(VDAgentFileXferDataMessage* data,
     iter = _tasks.find(data->id);
     if (iter == _tasks.end()) {
         vd_printf("file id %u not found", data->id);
-        goto fin;
+        return true;
     }
-    task = iter->second;
+    auto task = iter->second;
     task->pos += data->size;
     if (task->pos > task->size) {
         vd_printf("file xfer is longer than expected");
@@ -184,11 +174,7 @@ bool FileXfer::handle_data(VDAgentFileXferDataMessage* data,
     status->result = VD_AGENT_FILE_XFER_STATUS_SUCCESS;
 
 fin:
-    if (task) {
-        _tasks.erase(iter);
-        delete task;
-    }
-
+    _tasks.erase(iter);
     return true;
 }
 
@@ -212,7 +198,6 @@ void FileXferTask::success()
 void FileXfer::handle_status(VDAgentFileXferStatusMessage* status)
 {
     FileXferTasks::iterator iter;
-    FileXferTask* task;
 
     vd_printf("id %u result %u", status->id, status->result);
     if (status->result != VD_AGENT_FILE_XFER_STATUS_CANCELLED) {
@@ -224,9 +209,7 @@ void FileXfer::handle_status(VDAgentFileXferStatusMessage* status)
         vd_printf("file id %u not found", status->id);
         return;
     }
-    task = iter->second;
     _tasks.erase(iter);
-    delete task;
 }
 
 bool FileXfer::dispatch(VDAgentMessage* msg, VDAgentFileXferStatusMessage* status)
