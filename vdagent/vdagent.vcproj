@@ -350,11 +350,23 @@
 				>
 			</File>
 			<File
+				RelativePath=".\display_configuration.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\display_setting.cpp"
 				>
 			</File>
 			<File
 				RelativePath=".\file_xfer.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\image.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\imagepng.cpp"
 				>
 			</File>
 			<File
