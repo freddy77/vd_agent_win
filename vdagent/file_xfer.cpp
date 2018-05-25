@@ -46,7 +46,6 @@ void FileXfer::reset()
 
     for (iter = _tasks.begin(); iter != _tasks.end(); iter++) {
         task = iter->second;
-        task->cancel();
         delete task;
     }
     _tasks.clear();
@@ -181,14 +180,11 @@ bool FileXfer::handle_data(VDAgentFileXferDataMessage* data,
         return false;
     }
     vd_printf("%u completed", iter->first);
+    task->success();
     status->result = VD_AGENT_FILE_XFER_STATUS_SUCCESS;
 
 fin:
     if (task) {
-        CloseHandle(task->handle);
-        if (status->result != VD_AGENT_FILE_XFER_STATUS_SUCCESS) {
-            DeleteFile(task->name);
-        }
         _tasks.erase(iter);
         delete task;
     }
@@ -196,10 +192,21 @@ fin:
     return true;
 }
 
-void FileXferTask::cancel()
+FileXferTask::~FileXferTask()
 {
-    CloseHandle(handle);
-    DeleteFile(name);
+    if (handle != INVALID_HANDLE_VALUE) {
+        CloseHandle(handle);
+        DeleteFile(name);
+    }
+}
+
+void FileXferTask::success()
+{
+    // close the handle so the destructor won't delete the file
+    if (handle != INVALID_HANDLE_VALUE) {
+        CloseHandle(handle);
+        handle = INVALID_HANDLE_VALUE;
+    }
 }
 
 void FileXfer::handle_status(VDAgentFileXferStatusMessage* status)
@@ -218,7 +225,6 @@ void FileXfer::handle_status(VDAgentFileXferStatusMessage* status)
         return;
     }
     task = iter->second;
-    task->cancel();
     _tasks.erase(iter);
     delete task;
 }

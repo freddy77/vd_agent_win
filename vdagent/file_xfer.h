@@ -30,12 +30,14 @@ struct FileXferTask {
         lstrcpyn(name, _name, ARRAYSIZE(name));
         name[ARRAYSIZE(name)-1] = 0;
     }
+    ~FileXferTask();
+
     HANDLE handle;
     uint64_t size;
     uint64_t pos;
     TCHAR name[MAX_PATH];
 
-    void cancel();
+    void success();
 };
 
 typedef std::map<uint32_t, FileXferTask*> FileXferTasks;
