@@ -285,7 +285,7 @@ bool DisplaySetting::disable_wallpaper()
 bool DisplaySetting::reload_wallpaper(HKEY desktop_reg_key)
 {
     TCHAR wallpaper_path[MAX_PATH + 1];
-    DWORD value_size = sizeof(wallpaper_path);
+    DWORD value_size = sizeof(wallpaper_path) - sizeof(wallpaper_path[0]);
     DWORD value_type;
     LONG status;
     TCHAR cur_wallpaper[MAX_PATH + 1];
@@ -303,7 +303,8 @@ bool DisplaySetting::reload_wallpaper(HKEY desktop_reg_key)
         return false;
     }
 
-    if (wallpaper_path[value_size - 1] != '\0') {
+    value_size /= sizeof(wallpaper_path[0]);
+    if (!value_size || wallpaper_path[value_size - 1] != '\0') {
         wallpaper_path[value_size] = '\0';
     }
 
@@ -339,7 +340,7 @@ bool DisplaySetting::disable_font_smoothing()
 bool DisplaySetting::reload_font_smoothing(HKEY desktop_reg_key)
 {
     CHAR smooth_value[4];
-    DWORD value_size = sizeof(smooth_value);
+    DWORD value_size = sizeof(smooth_value)-1;
     DWORD value_type;
     LONG status;
     BOOL cur_font_smooth;
@@ -357,7 +358,7 @@ bool DisplaySetting::reload_font_smoothing(HKEY desktop_reg_key)
         return false;
     }
 
-    if (smooth_value[value_size - 1] != '\0') {
+    if (!value_size || smooth_value[value_size - 1] != '\0') {
         smooth_value[value_size] = '\0';
     }
 
@@ -412,7 +413,7 @@ bool DisplaySetting::reload_win_animation(HKEY desktop_reg_key)
 {
     HKEY win_metrics_hkey;
     CHAR win_anim_value[4];
-    DWORD value_size = sizeof(win_anim_value);
+    DWORD value_size = sizeof(win_anim_value)-1;
     DWORD value_type;
     LONG status;
     ANIMATIONINFO active_win_animation;
@@ -441,7 +442,7 @@ bool DisplaySetting::reload_win_animation(HKEY desktop_reg_key)
         return false;
     }
 
-    if (win_anim_value[value_size - 1] != '\0') {
+    if (!value_size || win_anim_value[value_size - 1] != '\0') {
         win_anim_value[value_size] = '\0';
     }
 
