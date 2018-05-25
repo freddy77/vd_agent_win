@@ -21,7 +21,7 @@
 #include <map>
 #include "vdcommon.h"
 
-typedef struct ALIGN_VC FileXferTask {
+typedef struct FileXferTask {
     FileXferTask(HANDLE _handle, uint64_t _size, const TCHAR* _name):
     handle(_handle), size(_size), pos(0) {
         // FIXME: should raise an error if name is too long..
@@ -36,7 +36,7 @@ typedef struct ALIGN_VC FileXferTask {
     TCHAR name[MAX_PATH];
 
     void cancel();
-} ALIGN_GCC FileXferTask;
+} FileXferTask;
 
 typedef std::map<uint32_t, FileXferTask*> FileXferTasks;
 
