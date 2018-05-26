@@ -259,7 +259,7 @@ DisplayConfig* DisplayConfig::create_config()
     try {
         new_interface = new  WDDMInterface();
     }
-    catch (std::exception& e) {
+    catch (std::exception&) {
         new_interface = new XPDMInterface();
     }
     return new_interface;
