@@ -282,30 +282,52 @@ bool DisplaySetting::disable_wallpaper()
     }
 }
 
-bool DisplaySetting::reload_wallpaper(HKEY desktop_reg_key)
+#if defined(UNICODE) || defined(_UNICODE)
+#define PRIsTSTR "ls"
+#else
+#define PRIsTSTR "s"
+#endif
+
+static bool RegReadString(HKEY key, const TCHAR *name, TCHAR *buffer, size_t buffer_len)
 {
-    TCHAR wallpaper_path[MAX_PATH + 1];
-    DWORD value_size = sizeof(wallpaper_path) - sizeof(wallpaper_path[0]);
+    DWORD value_size = (buffer_len - 1) * sizeof(buffer[0]);
     DWORD value_type;
     LONG status;
-    TCHAR cur_wallpaper[MAX_PATH + 1];
 
-    vd_printf("");
-    status = RegQueryValueEx(desktop_reg_key, TEXT("Wallpaper"), NULL,
-                             &value_type, (LPBYTE)wallpaper_path, &value_size);
+    status = RegQueryValueEx(key, name, NULL, &value_type, (LPBYTE)buffer, &value_size);
     if (status != ERROR_SUCCESS) {
-        vd_printf("RegQueryValueEx(Wallpaper) : fail %ld", status);
+        vd_printf("RegQueryValueEx(%" PRIsTSTR ") : fail %ld", name, status);
         return false;
     }
 
     if (value_type != REG_SZ) {
-        vd_printf("bad wallpaper value type %lu (expected REG_SZ)", value_type);
+        vd_printf("bad %" PRIsTSTR " value type %lu (expected REG_SZ)", name, value_type);
         return false;
     }
 
-    value_size /= sizeof(wallpaper_path[0]);
-    if (!value_size || wallpaper_path[value_size - 1] != '\0') {
-        wallpaper_path[value_size] = '\0';
+    // assure NUL-terminated
+    value_size /= sizeof(buffer[0]);
+    if (!value_size || buffer[value_size - 1] != '\0') {
+        buffer[value_size] = '\0';
+    }
+
+    return true;
+}
+
+template <size_t N>
+static inline bool RegReadString(HKEY key, const TCHAR *name, TCHAR (&buffer)[N])
+{
+    return RegReadString(key, name, buffer, N);
+}
+
+bool DisplaySetting::reload_wallpaper(HKEY desktop_reg_key)
+{
+    TCHAR wallpaper_path[MAX_PATH + 1];
+    TCHAR cur_wallpaper[MAX_PATH + 1];
+
+    vd_printf("");
+    if (!RegReadString(desktop_reg_key, TEXT("Wallpaper"), wallpaper_path)) {
+        return false;
     }
 
     if (SystemParametersInfo(SPI_GETDESKWALLPAPER, SPICE_N_ELEMENTS(cur_wallpaper), cur_wallpaper, 0)) {
@@ -340,27 +362,11 @@ bool DisplaySetting::disable_font_smoothing()
 bool DisplaySetting::reload_font_smoothing(HKEY desktop_reg_key)
 {
     TCHAR smooth_value[4];
-    DWORD value_size = sizeof(smooth_value)-sizeof(smooth_value[0]);
-    DWORD value_type;
-    LONG status;
     BOOL cur_font_smooth;
 
     vd_printf("");
-    status = RegQueryValueEx(desktop_reg_key, TEXT("FontSmoothing"), NULL,
-                             &value_type, (LPBYTE)smooth_value, &value_size);
-    if (status != ERROR_SUCCESS) {
-        vd_printf("RegQueryValueEx(FontSmoothing) : fail %ld", status);
+    if (!RegReadString(desktop_reg_key, TEXT("FontSmoothing"), smooth_value)) {
         return false;
-    }
-
-    if (value_type != REG_SZ) {
-        vd_printf("bad font smoothing value type %lu (expected REG_SZ)", value_type);
-        return false;
-    }
-
-    value_size /= sizeof(smooth_value[0]);
-    if (!value_size || smooth_value[value_size - 1] != '\0') {
-        smooth_value[value_size] = '\0';
     }
 
     if (_tcscmp(smooth_value, TEXT("0")) == 0) {
@@ -414,8 +420,6 @@ bool DisplaySetting::reload_win_animation(HKEY desktop_reg_key)
 {
     HKEY win_metrics_hkey;
     TCHAR win_anim_value[4];
-    DWORD value_size = sizeof(win_anim_value)-sizeof(win_anim_value[0]);
-    DWORD value_type;
     LONG status;
     ANIMATIONINFO active_win_animation;
 
@@ -428,25 +432,12 @@ bool DisplaySetting::reload_win_animation(HKEY desktop_reg_key)
         return false;
     }
 
-    status = RegQueryValueEx(win_metrics_hkey, TEXT("MinAnimate"), NULL,
-                             &value_type, (LPBYTE)win_anim_value, &value_size);
-    if (status != ERROR_SUCCESS) {
-        vd_printf("RegQueryValueEx(MinAnimate) : fail %ld", status);
+    if (!RegReadString(win_metrics_hkey, TEXT("MinAnimate"), win_anim_value)) {
         RegCloseKey(win_metrics_hkey);
         return false;
     }
 
     RegCloseKey(win_metrics_hkey);
-
-    if (value_type != REG_SZ) {
-        vd_printf("bad MinAnimate value type %lu (expected REG_SZ)", value_type);
-        return false;
-    }
-
-    value_size /= sizeof(win_anim_value[0]);
-    if (!value_size || win_anim_value[value_size - 1] != '\0') {
-        win_anim_value[value_size] = '\0';
-    }
 
     if (!_tcscmp(win_anim_value, TEXT("0"))) {
         vd_printf("window animation is disabled in registry. do nothing");
