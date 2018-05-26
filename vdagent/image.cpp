@@ -18,10 +18,14 @@
 #include <spice/macros.h>
 #include <memory>
 #include <vector>
+#include <algorithm>
 
 #include "vdcommon.h"
 #include "image.h"
 #include "imagepng.h"
+
+#undef max
+#undef min
 
 static ImageCoder *get_coder(uint32_t vdagent_type)
 {
