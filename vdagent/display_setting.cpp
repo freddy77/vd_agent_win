@@ -290,11 +290,25 @@ bool DisplaySetting::disable_wallpaper()
 
 static bool RegReadString(HKEY key, const TCHAR *name, TCHAR *buffer, size_t buffer_len)
 {
-    DWORD value_size = (buffer_len - 1) * sizeof(buffer[0]);
+    DWORD value_size = buffer_len * sizeof(buffer[0]);
     DWORD value_type;
     LONG status;
 
     status = RegQueryValueEx(key, name, NULL, &value_type, (LPBYTE)buffer, &value_size);
+    if (status == ERROR_SUCCESS && value_type == REG_SZ) {
+        // ensure NUL-terminated
+        value_size /= sizeof(buffer[0]);
+        if (value_size == buffer_len) {
+            // full buffer but not terminated?
+            if (buffer[value_size-1] != '\0') {
+                status = ERROR_MORE_DATA;
+            }
+        } else {
+            // append a NUL. If there's already a NUL character this
+            // new one will be ignored
+            buffer[value_size] = '\0';
+        }
+    }
     if (status != ERROR_SUCCESS) {
         vd_printf("RegQueryValueEx(%" PRIsTSTR ") : fail %ld", name, status);
         return false;
@@ -303,12 +317,6 @@ static bool RegReadString(HKEY key, const TCHAR *name, TCHAR *buffer, size_t buf
     if (value_type != REG_SZ) {
         vd_printf("bad %" PRIsTSTR " value type %lu (expected REG_SZ)", name, value_type);
         return false;
-    }
-
-    // assure NUL-terminated
-    value_size /= sizeof(buffer[0]);
-    if (!value_size || buffer[value_size - 1] != '\0') {
-        buffer[value_size] = '\0';
     }
 
     return true;
