@@ -1368,7 +1368,7 @@ VOID VDAgent::read_completion(DWORD err, DWORD bytes, LPOVERLAPPED overlapped)
         count = sizeof(VDIChunk) - a->_read_pos;
     } else if (a->_read_pos == sizeof(VDIChunk)) {
         count = chunk->hdr.size;
-        if (a->_read_pos + count > sizeof(a->_read_buf)) {
+        if (count > sizeof(a->_read_buf) - a->_read_pos) {
             vd_printf("chunk is too large, size %u port %u", chunk->hdr.size, chunk->hdr.port);
             a->_running = false;
             return;
@@ -1420,6 +1420,12 @@ void VDAgent::handle_chunk(VDIChunk* chunk)
     }
 
     // the previous chunk was a partial message, so append this chunk to the previous chunk
+    if (chunk->hdr.size > sizeof(VDAgentMessage) + _in_msg->size - _in_msg_pos) {
+        vd_printf("Invalid VDAgentMessage message");
+        _running = false;
+        return;
+    }
+
     memcpy((uint8_t*)_in_msg + _in_msg_pos, chunk->data, chunk->hdr.size);
     _in_msg_pos += chunk->hdr.size;
     // update clipboard tick on each clipboard chunk for timeout setting
