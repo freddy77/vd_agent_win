@@ -67,14 +67,6 @@ typedef Mutex mutex_t;
 #define VD_AGENT_REGISTRY_KEY "SOFTWARE\\Red Hat\\Spice\\vdagent\\"
 #define VD_AGENT_STOP_EVENT   TEXT("Global\\vdagent_stop_event")
 
-#if defined __GNUC__
-#define ALIGN_GCC __attribute__ ((packed))
-#define ALIGN_VC
-#else
-#define ALIGN_GCC
-#define ALIGN_VC __declspec (align(1))
-#endif
-
 /*
  * Note: OLDMSVCRT, which is defined (in the Makefile) for mingw builds, and
  * is not defined for Visual Studio builds.

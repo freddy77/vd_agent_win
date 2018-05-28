@@ -55,10 +55,12 @@ static const VDClipboardFormat clipboard_formats[] = {
 
 #define clipboard_formats_count SPICE_N_ELEMENTS(clipboard_formats)
 
-typedef struct ALIGN_VC VDIChunk {
+#include <spice/start-packed.h>
+typedef struct SPICE_ATTR_PACKED VDIChunk {
     VDIChunkHeader hdr;
     uint8_t data[0];
-} ALIGN_GCC VDIChunk;
+} VDIChunk;
+#include <spice/end-packed.h>
 
 #define VD_MESSAGE_HEADER_SIZE (sizeof(VDIChunk) + sizeof(VDAgentMessage))
 #define VD_READ_BUF_SIZE       (sizeof(VDIChunk) + VD_AGENT_MAX_DATA_SIZE)
