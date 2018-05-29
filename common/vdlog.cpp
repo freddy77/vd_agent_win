@@ -84,18 +84,15 @@ void VDLog::logf(const char *type, const char *function, const char* format, ...
     FILE *fh = _log ? _log->_handle : stdout;
     va_list args;
 
-    struct _timeb now;
-    struct tm today;
-    char datetime_str[20];
-    _ftime_s(&now);
-    localtime_s(&today, &now.time);
-    strftime(datetime_str, 20, "%Y-%m-%d %H:%M:%S", &today);
+    SYSTEMTIME st;
+    GetLocalTime(&st);
 
     _lock_file(fh);
-    fprintf(fh, "%lu::%s::%s,%.3d::%s::",
+    fprintf(fh, "%lu::%s::%.4u-%.2u-%.2u %.2u:%.2u:%.2u,%.3u::%s::",
             GetCurrentThreadId(), type,
-            datetime_str,
-            now.millitm,
+            st.wYear, st.wMonth, st.wDay,
+            st.wHour, st.wMinute, st.wSecond,
+            st.wMilliseconds,
             function);
 
     va_start(args, format);
