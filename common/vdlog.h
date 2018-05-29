@@ -35,6 +35,10 @@ public:
     __attribute__((__format__ (gnu_printf, 1, 2)))
 #endif
     static void printf(const char* format, ...);
+#ifdef __GNUC__
+    __attribute__((__format__ (gnu_printf, 3, 4)))
+#endif
+    static void logf(const char *type, const char *function, const char* format, ...);
 
 private:
     VDLog(FILE* handle);
@@ -60,16 +64,7 @@ static const VDLogLevel log_level = LOG_INFO;
 
 #define LOG(type, format, ...) do {                                     \
     if (LOG_ ## type >= log_level && LOG_ ## type <= LOG_FATAL) {       \
-        struct _timeb now;                                              \
-        struct tm today;                                                \
-        char datetime_str[20];                                          \
-        _ftime_s(&now);                                                 \
-        localtime_s(&today, &now.time);                                 \
-        strftime(datetime_str, 20, "%Y-%m-%d %H:%M:%S", &today);        \
-        VDLog::printf("%lu::%s::%s,%.3d::%s::" format "\n",             \
-                      GetCurrentThreadId(), #type,                      \
-                      datetime_str, now.millitm,                        \
-                      __FUNCTION__, ## __VA_ARGS__);                    \
+        VDLog::logf(#type, __FUNCTION__, format "\n", ## __VA_ARGS__);  \
     }                                                                   \
 } while(0)
 

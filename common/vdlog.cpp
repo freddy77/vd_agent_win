@@ -79,6 +79,32 @@ void VDLog::printf(const char* format, ...)
     fflush(fh);
 }
 
+void VDLog::logf(const char *type, const char *function, const char* format, ...)
+{
+    FILE *fh = _log ? _log->_handle : stdout;
+    va_list args;
+
+    struct _timeb now;
+    struct tm today;
+    char datetime_str[20];
+    _ftime_s(&now);
+    localtime_s(&today, &now.time);
+    strftime(datetime_str, 20, "%Y-%m-%d %H:%M:%S", &today);
+
+    _lock_file(fh);
+    fprintf(fh, "%lu::%s::%s,%.3d::%s::",
+            GetCurrentThreadId(), type,
+            datetime_str,
+            now.millitm,
+            function);
+
+    va_start(args, format);
+    vfprintf(fh, format, args);
+    va_end(args);
+    _unlock_file(fh);
+    fflush(fh);
+}
+
 void log_version()
 {
     // print same version as resource one
