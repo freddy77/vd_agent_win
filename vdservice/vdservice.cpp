@@ -337,7 +337,7 @@ VOID WINAPI VDService::main(DWORD argc, TCHAR* argv[])
     s->_status_handle = RegisterServiceCtrlHandlerEx(VD_SERVICE_NAME, &VDService::control_handler,
                                                      s);
     if (!s->_status_handle) {
-        vd_printf("RegisterServiceCtrlHandler failed\n");
+        vd_printf("RegisterServiceCtrlHandler failed");
         return;
     }
 
