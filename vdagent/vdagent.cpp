@@ -77,17 +77,17 @@ private:
     VDAgent();
     void input_desktop_message_loop();
     void event_dispatcher(DWORD timeout, DWORD wake_mask);
-    bool handle_mouse_event(VDAgentMouseState* state);
-    bool handle_announce_capabilities(VDAgentAnnounceCapabilities* announce_capabilities,
+    bool handle_mouse_event(const VDAgentMouseState* state);
+    bool handle_announce_capabilities(const VDAgentAnnounceCapabilities* announce_capabilities,
                                       uint32_t msg_size);
-    bool handle_mon_config(VDAgentMonitorsConfig* mon_config, uint32_t port);
-    bool handle_clipboard(VDAgentClipboard* clipboard, uint32_t size);
-    bool handle_clipboard_grab(VDAgentClipboardGrab* clipboard_grab, uint32_t size);
-    bool handle_clipboard_request(VDAgentClipboardRequest* clipboard_request);
+    bool handle_mon_config(const VDAgentMonitorsConfig* mon_config, uint32_t port);
+    bool handle_clipboard(const VDAgentClipboard* clipboard, uint32_t size);
+    bool handle_clipboard_grab(const VDAgentClipboardGrab* clipboard_grab, uint32_t size);
+    bool handle_clipboard_request(const VDAgentClipboardRequest* clipboard_request);
     void handle_clipboard_release();
-    bool handle_display_config(VDAgentDisplayConfig* display_config, uint32_t port);
-    bool handle_max_clipboard(VDAgentMaxClipboard *msg, uint32_t size);
-    void handle_chunk(VDIChunk* chunk);
+    bool handle_display_config(const VDAgentDisplayConfig* display_config, uint32_t port);
+    bool handle_max_clipboard(const VDAgentMaxClipboard *msg, uint32_t size);
+    void handle_chunk(const VDIChunk* chunk);
     void on_clipboard_grab();
     void on_clipboard_request(UINT format);
     void on_clipboard_release();
@@ -620,7 +620,7 @@ bool VDAgent::send_input()
     return ret;
 }
 
-bool VDAgent::handle_mouse_event(VDAgentMouseState* state)
+bool VDAgent::handle_mouse_event(const VDAgentMouseState* state)
 {
     _new_mouse = *state;
     if (_new_mouse.buttons != _last_mouse.buttons) {
@@ -644,7 +644,7 @@ bool VDAgent::handle_mouse_event(VDAgentMouseState* state)
     return true;
 }
 
-bool VDAgent::handle_mon_config(VDAgentMonitorsConfig* mon_config, uint32_t port)
+bool VDAgent::handle_mon_config(const VDAgentMonitorsConfig* mon_config, uint32_t port)
 {
     VDIChunk* reply_chunk;
     VDAgentMessage* reply_msg;
@@ -666,7 +666,7 @@ bool VDAgent::handle_mon_config(VDAgentMonitorsConfig* mon_config, uint32_t port
             update_displays = true;
             continue;
         }
-        VDAgentMonConfig* mon = &mon_config->monitors[i];
+        const VDAgentMonConfig* mon = &mon_config->monitors[i];
         vd_printf("%d. %u*%u*%u (%d,%d) %u", i, mon->width, mon->height, mon->depth, mon->x,
                   mon->y, !!(mon_config->flags & VD_AGENT_CONFIG_MONITORS_FLAG_USE_POS));
         if (mon->height == 0 && mon->depth == 0) {
@@ -715,7 +715,7 @@ bool VDAgent::handle_mon_config(VDAgentMonitorsConfig* mon_config, uint32_t port
     return true;
 }
 
-bool VDAgent::handle_clipboard(VDAgentClipboard* clipboard, uint32_t size)
+bool VDAgent::handle_clipboard(const VDAgentClipboard* clipboard, uint32_t size)
 {
     HANDLE clip_data;
     UINT format;
@@ -854,7 +854,7 @@ bool VDAgent::send_announce_capabilities(bool request)
     return true;
 }
 
-bool VDAgent::handle_announce_capabilities(VDAgentAnnounceCapabilities* announce_capabilities,
+bool VDAgent::handle_announce_capabilities(const VDAgentAnnounceCapabilities* announce_capabilities,
                                            uint32_t msg_size)
 {
     uint32_t caps_size = VD_AGENT_CAPS_SIZE_FROM_MSG_SIZE(msg_size);
@@ -873,7 +873,7 @@ bool VDAgent::handle_announce_capabilities(VDAgentAnnounceCapabilities* announce
     return true;
 }
 
-bool VDAgent::handle_display_config(VDAgentDisplayConfig* display_config, uint32_t port)
+bool VDAgent::handle_display_config(const VDAgentDisplayConfig* display_config, uint32_t port)
 {
     DisplaySettingOptions disp_setting_opts;
     VDIChunk* reply_chunk;
@@ -918,7 +918,7 @@ bool VDAgent::handle_display_config(VDAgentDisplayConfig* display_config, uint32
     return true;
 }
 
-bool VDAgent::handle_max_clipboard(VDAgentMaxClipboard *msg, uint32_t size)
+bool VDAgent::handle_max_clipboard(const VDAgentMaxClipboard *msg, uint32_t size)
 {
     if (size != sizeof(VDAgentMaxClipboard)) {
         vd_printf("VDAgentMaxClipboard: unexpected msg size %u (expected %lu)",
@@ -1060,7 +1060,7 @@ void VDAgent::on_clipboard_release()
     }
 }
 
-bool VDAgent::handle_clipboard_grab(VDAgentClipboardGrab* clipboard_grab, uint32_t size)
+bool VDAgent::handle_clipboard_grab(const VDAgentClipboardGrab* clipboard_grab, uint32_t size)
 {
     std::set<uint32_t> grab_formats;
 
@@ -1094,7 +1094,7 @@ bool VDAgent::handle_clipboard_grab(VDAgentClipboardGrab* clipboard_grab, uint32
 
 // If handle_clipboard_request() fails, its caller sends VD_AGENT_CLIPBOARD message with type
 // VD_AGENT_CLIPBOARD_NONE and no data, so the client will know the request failed.
-bool VDAgent::handle_clipboard_request(VDAgentClipboardRequest* clipboard_request)
+bool VDAgent::handle_clipboard_request(const VDAgentClipboardRequest* clipboard_request)
 {
     VDAgentMessage* msg;
     uint32_t msg_size;
@@ -1413,7 +1413,7 @@ VOID VDAgent::read_completion(DWORD err, DWORD bytes, LPOVERLAPPED overlapped)
     }
 }
 
-void VDAgent::handle_chunk(VDIChunk* chunk)
+void VDAgent::handle_chunk(const VDIChunk* chunk)
 {
     //FIXME: currently assumes that multi-part msg arrives only from client port
     if (_in_msg_pos == 0 || chunk->hdr.port == VDP_SERVER_PORT) {
