@@ -100,10 +100,10 @@ private:
     void dispatch_message(VDAgentMessage* msg, uint32_t port);
     uint32_t get_clipboard_format(uint32_t type) const;
     uint32_t get_clipboard_type(uint32_t format) const;
-    enum { owner_none, owner_guest, owner_client };
-    void set_clipboard_owner(int new_owner);
-    enum { CONTROL_STOP, CONTROL_RESET, CONTROL_DESKTOP_SWITCH, CONTROL_LOGON, CONTROL_CLIPBOARD };
-    void set_control_event(int control_command);
+    enum clipboard_owner_t { owner_none, owner_guest, owner_client };
+    void set_clipboard_owner(clipboard_owner_t new_owner);
+    enum control_command_t { CONTROL_STOP, CONTROL_RESET, CONTROL_DESKTOP_SWITCH, CONTROL_LOGON, CONTROL_CLIPBOARD };
+    void set_control_event(control_command_t control_command);
     void handle_control_event();
     VDIChunk* new_chunk(DWORD bytes = 0);
     void enqueue_chunk(VDIChunk* msg);
@@ -346,7 +346,7 @@ void VDAgent::cleanup()
     delete _desktop_layout;
 }
 
-void VDAgent::set_control_event(int control_command)
+void VDAgent::set_control_event(control_command_t control_command)
 {
     MutexLocker lock(_control_mutex);
     _control_queue.push(control_command);
@@ -1207,7 +1207,7 @@ uint32_t VDAgent::get_clipboard_type(uint32_t format) const
     return 0;
 }
 
-void VDAgent::set_clipboard_owner(int new_owner)
+void VDAgent::set_clipboard_owner(clipboard_owner_t new_owner)
 {
     // FIXME: Clear requests, clipboard data and state
     if (new_owner == owner_none) {
@@ -1455,7 +1455,7 @@ LRESULT CALLBACK VDAgent::wnd_proc(HWND hwnd, UINT message, WPARAM wparam, LPARA
     case WM_CLIPBOARDUPDATE:
     case WM_DRAWCLIPBOARD:
         if (a->_hwnd != GetClipboardOwner()) {
-            a->set_clipboard_owner(a->owner_none);
+            a->set_clipboard_owner(owner_none);
             a->on_clipboard_grab();
         }
         if (a->_hwnd_next_viewer) {
