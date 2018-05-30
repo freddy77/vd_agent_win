@@ -1231,6 +1231,60 @@ void VDAgent::dispatch_message(VDAgentMessage* msg, uint32_t port)
 {
     bool res = true;
 
+    // check minimal message size
+    int min_size = -1;
+    switch (msg->type) {
+    case VD_AGENT_MOUSE_STATE:
+        min_size = sizeof(VDAgentMouseState);
+        break;
+    case VD_AGENT_MONITORS_CONFIG:
+        min_size = sizeof(VDAgentMonitorsConfig);
+        break;
+    case VD_AGENT_CLIPBOARD:
+        min_size = sizeof(VDAgentClipboard);
+        break;
+    case VD_AGENT_CLIPBOARD_GRAB:
+        min_size = sizeof(VDAgentClipboardGrab);
+        break;
+    case VD_AGENT_CLIPBOARD_REQUEST:
+        min_size = sizeof(VDAgentClipboardRequest);
+        break;
+    case VD_AGENT_CLIPBOARD_RELEASE:
+        min_size = sizeof(VDAgentClipboardRelease);
+        break;
+    case VD_AGENT_DISPLAY_CONFIG:
+        min_size = sizeof(VDAgentDisplayConfig);
+        break;
+    case VD_AGENT_ANNOUNCE_CAPABILITIES:
+        min_size = sizeof(VDAgentAnnounceCapabilities);
+        break;
+    case VD_AGENT_FILE_XFER_START:
+        min_size = sizeof(VDAgentFileXferStatusMessage);
+        break;
+    case VD_AGENT_FILE_XFER_STATUS:
+        min_size = sizeof(VDAgentFileXferStatusMessage);
+        break;
+    case VD_AGENT_FILE_XFER_DATA:
+        min_size = sizeof(VDAgentFileXferDataMessage);
+        break;
+    case VD_AGENT_CLIENT_DISCONNECTED:
+        min_size = 0;
+        break;
+    case VD_AGENT_MAX_CLIPBOARD:
+        min_size = sizeof(VDAgentMaxClipboard);
+        break;
+    }
+    if (min_size < 0) {
+        vd_printf("Unsupported message type %u size %u", msg->type, msg->size);
+        _running = false;
+        return;
+    }
+    if (msg->size < (unsigned) min_size) {
+        vd_printf("Unexpected msg size %u for message type %u", msg->size, msg->type);
+        _running = false;
+        return;
+    }
+
     switch (msg->type) {
     case VD_AGENT_MOUSE_STATE:
         res = handle_mouse_event((VDAgentMouseState*)msg->data);
