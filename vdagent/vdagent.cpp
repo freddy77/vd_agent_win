@@ -1412,7 +1412,11 @@ void VDAgent::handle_chunk(VDIChunk* chunk)
 
         // got just the start, start to collapse all chunks into a
         // single buffer
-        ASSERT(chunk->hdr.size < msg_size);
+        if (chunk->hdr.size >= msg_size) {
+            vd_printf("Invalid VDAgentMessage message");
+            _running = false;
+            return;
+        }
         _in_msg = (VDAgentMessage*)new uint8_t[msg_size];
         memcpy(_in_msg, chunk->data, chunk->hdr.size);
         _in_msg_pos = chunk->hdr.size;
