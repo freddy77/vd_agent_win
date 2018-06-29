@@ -142,7 +142,7 @@ private:
     bool _running;
     bool _session_is_locked;
     bool _desktop_switch;
-    DesktopLayout* _desktop_layout;
+    std::unique_ptr<DesktopLayout> _desktop_layout;
     bool _updating_display_config;
     DisplaySetting _display_setting;
     FileXfer _file_xfer;
@@ -198,7 +198,6 @@ VDAgent::VDAgent()
     , _running (false)
     , _session_is_locked (false)
     , _desktop_switch (false)
-    , _desktop_layout (NULL)
     , _display_setting (VD_AGENT_REGISTRY_KEY)
     , _vio_serial (NULL)
     , _read_pos (0)
@@ -301,7 +300,7 @@ bool VDAgent::run()
         cleanup();
         return false;
     }
-    _desktop_layout = new DesktopLayout();
+    _desktop_layout.reset(new DesktopLayout());
     if (_desktop_layout->get_display_count() == 0) {
         vd_printf("No QXL devices!");
     }
@@ -343,7 +342,6 @@ void VDAgent::cleanup()
     CloseHandle(_stop_event);
     CloseHandle(_control_event);
     CloseHandle(_vio_serial);
-    delete _desktop_layout;
 }
 
 void VDAgent::set_control_event(control_command_t control_command)
