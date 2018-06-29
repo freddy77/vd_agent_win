@@ -1393,6 +1393,7 @@ void VDAgent::handle_chunk(VDIChunk* chunk)
 {
     //FIXME: currently assumes that multi-part msg arrives only from client port
     if (_in_msg_pos == 0 || chunk->hdr.port == VDP_SERVER_PORT) {
+        // ignore the chunk if too short
         if (chunk->hdr.size < sizeof(VDAgentMessage)) {
             return;
         }
@@ -1404,28 +1405,34 @@ void VDAgent::handle_chunk(VDIChunk* chunk)
         }
         uint32_t msg_size = sizeof(VDAgentMessage) + msg->size;
         if (chunk->hdr.size == msg_size) {
+            // we got an entire message, handle it
             dispatch_message(msg, chunk->hdr.port);
+            return;
+        }
+
+        // got just the start, start to collapse all chunks into a
+        // single buffer
+        ASSERT(chunk->hdr.size < msg_size);
+        _in_msg = (VDAgentMessage*)new uint8_t[msg_size];
+        memcpy(_in_msg, chunk->data, chunk->hdr.size);
+        _in_msg_pos = chunk->hdr.size;
+        return;
+    }
+
+    // the previous chunk was a partial message, so append this chunk to the previous chunk
+    memcpy((uint8_t*)_in_msg + _in_msg_pos, chunk->data, chunk->hdr.size);
+    _in_msg_pos += chunk->hdr.size;
+    // update clipboard tick on each clipboard chunk for timeout setting
+    if (_in_msg->type == VD_AGENT_CLIPBOARD && _clipboard_tick) {
+        _clipboard_tick = GetTickCount();
+    }
+    if (_in_msg_pos == sizeof(VDAgentMessage) + _in_msg->size) {
+        if (_in_msg->type == VD_AGENT_CLIPBOARD && !_clipboard_tick) {
+            vd_printf("Clipboard received but dropped due to timeout");
         } else {
-            ASSERT(chunk->hdr.size < msg_size);
-            _in_msg = (VDAgentMessage*)new uint8_t[msg_size];
-            memcpy(_in_msg, chunk->data, chunk->hdr.size);
-            _in_msg_pos = chunk->hdr.size;
+            dispatch_message(_in_msg, 0);
         }
-    } else {
-        memcpy((uint8_t*)_in_msg + _in_msg_pos, chunk->data, chunk->hdr.size);
-        _in_msg_pos += chunk->hdr.size;
-        // update clipboard tick on each clipboard chunk for timeout setting
-        if (_in_msg->type == VD_AGENT_CLIPBOARD && _clipboard_tick) {
-            _clipboard_tick = GetTickCount();
-        }
-        if (_in_msg_pos == sizeof(VDAgentMessage) + _in_msg->size) {
-            if (_in_msg->type == VD_AGENT_CLIPBOARD && !_clipboard_tick) {
-                vd_printf("Clipboard received but dropped due to timeout");
-            } else {
-                dispatch_message(_in_msg, 0);
-            }
-            cleanup_in_msg();
-        }
+        cleanup_in_msg();
     }
 }
 
