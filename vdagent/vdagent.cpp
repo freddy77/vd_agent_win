@@ -110,6 +110,7 @@ private:
     bool write_message(uint32_t type, uint32_t size, void* data);
     bool write_clipboard(VDAgentMessage* msg, uint32_t size);
     bool init_vio_serial();
+    void close_vio_serial();
     bool send_input();
     void set_display_depth(uint32_t depth);
     void load_display_setting();
@@ -343,7 +344,7 @@ bool VDAgent::run()
 void VDAgent::cleanup()
 {
     FreeLibrary(_user_lib);
-    CloseHandle(_vio_serial);
+    close_vio_serial();
 }
 
 void VDAgent::set_control_event(control_command_t control_command)
@@ -1225,6 +1226,14 @@ bool VDAgent::init_vio_serial()
         return false;
     }
     return true;
+}
+
+void VDAgent::close_vio_serial()
+{
+    if (_vio_serial != INVALID_HANDLE_VALUE) {
+        CloseHandle(_vio_serial);
+        _vio_serial = INVALID_HANDLE_VALUE;
+    }
 }
 
 void VDAgent::dispatch_message(VDAgentMessage* msg, uint32_t port)
