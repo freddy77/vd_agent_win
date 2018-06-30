@@ -129,7 +129,7 @@ private:
     PCLIPBOARD_OP _add_clipboard_listener;
     PCLIPBOARD_OP _remove_clipboard_listener;
     int _system_version;
-    int _clipboard_owner;
+    clipboard_owner_t _clipboard_owner;
     DWORD _clipboard_tick;
     VDAgentMouseState _new_mouse = {};
     VDAgentMouseState _last_mouse = {};
