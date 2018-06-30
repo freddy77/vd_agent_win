@@ -224,6 +224,8 @@ VDAgent::VDAgent()
 
 VDAgent::~VDAgent()
 {
+    CloseHandle(_stop_event);
+    CloseHandle(_control_event);
     delete _log;
 }
 
@@ -285,13 +287,18 @@ bool VDAgent::run()
             return false;
         }
     }
-    _control_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+    if (!_control_event)
+        _control_event = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (!_control_event) {
         vd_printf("CreateEvent() failed: %lu", GetLastError());
         cleanup();
         return false;
     }
-    _stop_event = OpenEvent(SYNCHRONIZE, FALSE, VD_AGENT_STOP_EVENT);
+    ResetEvent(_control_event);
+
+    if (!_stop_event)
+        _stop_event = OpenEvent(SYNCHRONIZE, FALSE, VD_AGENT_STOP_EVENT);
+
     memset(&wcls, 0, sizeof(wcls));
     wcls.lpfnWndProc = &VDAgent::wnd_proc;
     wcls.lpszClassName = VD_AGENT_WINCLASS_NAME;
@@ -339,8 +346,6 @@ bool VDAgent::run()
 void VDAgent::cleanup()
 {
     FreeLibrary(_user_lib);
-    CloseHandle(_stop_event);
-    CloseHandle(_control_event);
     CloseHandle(_vio_serial);
 }
 
