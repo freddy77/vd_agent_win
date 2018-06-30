@@ -125,7 +125,6 @@ private:
     static VDAgent* _singleton;
     HWND _hwnd;
     HWND _hwnd_next_viewer;
-    HMODULE _user_lib;
     PCLIPBOARD_OP _add_clipboard_listener;
     PCLIPBOARD_OP _remove_clipboard_listener;
     clipboard_owner_t _clipboard_owner;
@@ -183,7 +182,6 @@ VDAgent* VDAgent::get()
 VDAgent::VDAgent()
     : _hwnd (NULL)
     , _hwnd_next_viewer (NULL)
-    , _user_lib (NULL)
     , _add_clipboard_listener (NULL)
     , _remove_clipboard_listener (NULL)
     , _clipboard_owner (owner_none)
@@ -222,7 +220,6 @@ VDAgent::VDAgent()
 
 VDAgent::~VDAgent()
 {
-    FreeLibrary(_user_lib);
     close_vio_serial();
     CloseHandle(_stop_event);
     CloseHandle(_control_event);
@@ -285,9 +282,9 @@ bool VDAgent::run()
         vd_printf("SetProcessShutdownParameters failed %lu", GetLastError());
     }
 
-    _user_lib = LoadLibrary(L"User32.dll");
+    HMODULE _user_lib = GetModuleHandle(L"User32");
     if (!_user_lib) {
-        vd_printf("LoadLibrary failed %lu", GetLastError());
+        vd_printf("GetModuleHandle failed %lu", GetLastError());
         return false;
     }
     _add_clipboard_listener =
