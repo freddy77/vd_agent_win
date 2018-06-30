@@ -268,22 +268,22 @@ bool VDAgent::run()
     if (!SetProcessShutdownParameters(0x100, 0)) {
         vd_printf("SetProcessShutdownParameters failed %lu", GetLastError());
     }
-    if (supported_system_version() == SYS_VER_WIN_7_CLASS) {
-        _user_lib = LoadLibrary(L"User32.dll");
-        if (!_user_lib) {
-            vd_printf("LoadLibrary failed %lu", GetLastError());
-            return false;
-        }
-        _add_clipboard_listener =
-            (PCLIPBOARD_OP)GetProcAddress(_user_lib, "AddClipboardFormatListener");
-        _remove_clipboard_listener =
-            (PCLIPBOARD_OP)GetProcAddress(_user_lib, "RemoveClipboardFormatListener");
-        if (!_add_clipboard_listener || !_remove_clipboard_listener) {
-            vd_printf("GetProcAddress failed %lu", GetLastError());
-            cleanup();
-            return false;
-        }
+
+    _user_lib = LoadLibrary(L"User32.dll");
+    if (!_user_lib) {
+        vd_printf("LoadLibrary failed %lu", GetLastError());
+        return false;
     }
+    _add_clipboard_listener =
+        (PCLIPBOARD_OP)GetProcAddress(_user_lib, "AddClipboardFormatListener");
+    _remove_clipboard_listener =
+        (PCLIPBOARD_OP)GetProcAddress(_user_lib, "RemoveClipboardFormatListener");
+    // do not use FormatListener APIs if not available
+    if (!_add_clipboard_listener || !_remove_clipboard_listener) {
+        _add_clipboard_listener = nullptr;
+        _remove_clipboard_listener = nullptr;
+    }
+
     if (!_control_event)
         _control_event = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (!_control_event) {
