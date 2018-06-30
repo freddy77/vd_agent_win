@@ -255,7 +255,6 @@ DWORD WINAPI VDAgent::event_thread_proc(LPVOID param)
 bool VDAgent::run()
 {
     DWORD session_id;
-    DWORD event_thread_id;
     HANDLE event_thread;
     WNDCLASS wcls;
 
@@ -322,7 +321,7 @@ bool VDAgent::run()
         return false;
     }
     _running = true;
-    event_thread = CreateThread(NULL, 0, event_thread_proc, this, 0, &event_thread_id);
+    event_thread = CreateThread(NULL, 0, event_thread_proc, this, 0, NULL);
     if (!event_thread) {
         vd_printf("CreateThread() failed: %lu", GetLastError());
         cleanup();
