@@ -128,7 +128,6 @@ private:
     HMODULE _user_lib;
     PCLIPBOARD_OP _add_clipboard_listener;
     PCLIPBOARD_OP _remove_clipboard_listener;
-    int _system_version;
     clipboard_owner_t _clipboard_owner;
     DWORD _clipboard_tick;
     VDAgentMouseState _new_mouse = {};
@@ -210,7 +209,6 @@ VDAgent::VDAgent()
     TCHAR log_path[MAX_PATH];
     TCHAR temp_path[MAX_PATH];
 
-    _system_version = supported_system_version();
     if (GetTempPath(MAX_PATH, temp_path)) {
         swprintf_s(log_path, MAX_PATH, VD_AGENT_LOG_PATH, temp_path);
         _log = VDLog::get(log_path);
@@ -270,7 +268,7 @@ bool VDAgent::run()
     if (!SetProcessShutdownParameters(0x100, 0)) {
         vd_printf("SetProcessShutdownParameters failed %lu", GetLastError());
     }
-    if (_system_version == SYS_VER_WIN_7_CLASS) {
+    if (supported_system_version() == SYS_VER_WIN_7_CLASS) {
         _user_lib = LoadLibrary(L"User32.dll");
         if (!_user_lib) {
             vd_printf("LoadLibrary failed %lu", GetLastError());
@@ -447,7 +445,7 @@ void VDAgent::input_desktop_message_loop()
     if (!WTSRegisterSessionNotification(_hwnd, NOTIFY_FOR_ALL_SESSIONS)) {
         vd_printf("WTSRegisterSessionNotification() failed: %lu", GetLastError());
     }
-    if (_system_version == SYS_VER_WIN_7_CLASS) {
+    if (_add_clipboard_listener) {
         _add_clipboard_listener(_hwnd);
     } else {
         _hwnd_next_viewer = SetClipboardViewer(_hwnd);
@@ -460,7 +458,7 @@ void VDAgent::input_desktop_message_loop()
         KillTimer(_hwnd, VD_TIMER_ID);
         _pending_input = false;
     }
-    if (_system_version == SYS_VER_WIN_7_CLASS) {
+    if (_remove_clipboard_listener) {
         _remove_clipboard_listener(_hwnd);
     } else {
         ChangeClipboardChain(_hwnd, _hwnd_next_viewer);
