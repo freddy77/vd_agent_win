@@ -116,7 +116,6 @@ private:
     void load_display_setting();
     bool send_announce_capabilities(bool request);
     void cleanup_in_msg();
-    void cleanup();
     bool has_capability(unsigned int capability) const {
         return VD_AGENT_HAS_CAPABILITY(_client_caps.begin(), _client_caps.size(),
                                        capability);
@@ -223,6 +222,8 @@ VDAgent::VDAgent()
 
 VDAgent::~VDAgent()
 {
+    FreeLibrary(_user_lib);
+    close_vio_serial();
     CloseHandle(_stop_event);
     CloseHandle(_control_event);
     delete _log;
@@ -257,6 +258,8 @@ bool VDAgent::run()
     HANDLE event_thread;
     WNDCLASS wcls;
 
+    close_vio_serial();
+
     if (!ProcessIdToSessionId(GetCurrentProcessId(), &session_id)) {
         vd_printf("ProcessIdToSessionId failed %lu", GetLastError());
         return false;
@@ -289,7 +292,6 @@ bool VDAgent::run()
         _control_event = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (!_control_event) {
         vd_printf("CreateEvent() failed: %lu", GetLastError());
-        cleanup();
         return false;
     }
     ResetEvent(_control_event);
@@ -302,7 +304,6 @@ bool VDAgent::run()
     wcls.lpszClassName = VD_AGENT_WINCLASS_NAME;
     if (!RegisterClass(&wcls)) {
         vd_printf("RegisterClass() failed: %lu", GetLastError());
-        cleanup();
         return false;
     }
     _desktop_layout.reset(new DesktopLayout());
@@ -310,20 +311,17 @@ bool VDAgent::run()
         vd_printf("No QXL devices!");
     }
     if (!init_vio_serial()) {
-        cleanup();
         return false;
     }
     if (!ReadFileEx(_vio_serial, _read_buf, sizeof(VDIChunk), &_read_overlapped, read_completion) &&
             GetLastError() != ERROR_IO_PENDING) {
         vd_printf("vio_serial read error %lu", GetLastError());
-        cleanup();
         return false;
     }
     _running = true;
     event_thread = CreateThread(NULL, 0, event_thread_proc, this, 0, NULL);
     if (!event_thread) {
         vd_printf("CreateThread() failed: %lu", GetLastError());
-        cleanup();
         return false;
     }
     send_announce_capabilities(true);
@@ -337,14 +335,7 @@ bool VDAgent::run()
     }
     vd_printf("Agent stopped");
     CloseHandle(event_thread);
-    cleanup();
     return true;
-}
-
-void VDAgent::cleanup()
-{
-    FreeLibrary(_user_lib);
-    close_vio_serial();
 }
 
 void VDAgent::set_control_event(control_command_t control_command)
