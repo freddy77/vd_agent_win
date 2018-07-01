@@ -59,8 +59,7 @@ static const VDLogLevel log_level = LOG_INFO;
 #endif
 
 #define LOG(type, format, ...) do {                                     \
-    if (type >= log_level && type <= LOG_FATAL) {                       \
-        const char *type_as_char[] = { "DEBUG", "INFO", "WARN", "ERROR", "FATAL" }; \
+    if (LOG_ ## type >= log_level && LOG_ ## type <= LOG_FATAL) {       \
         struct _timeb now;                                              \
         struct tm today;                                                \
         char datetime_str[20];                                          \
@@ -68,23 +67,23 @@ static const VDLogLevel log_level = LOG_INFO;
         localtime_s(&today, &now.time);                                 \
         strftime(datetime_str, 20, "%Y-%m-%d %H:%M:%S", &today);        \
         VDLog::printf("%lu::%s::%s,%.3d::%s::" format "\n",             \
-                      GetCurrentThreadId(), type_as_char[type],         \
+                      GetCurrentThreadId(), #type,                      \
                       datetime_str, now.millitm,                        \
                       __FUNCTION__, ## __VA_ARGS__);                    \
     }                                                                   \
 } while(0)
 
 
-#define vd_printf(format, ...) LOG(LOG_INFO, format, ## __VA_ARGS__)
-#define LOG_INFO(format, ...) LOG(LOG_INFO, format, ## __VA_ARGS__)
-#define LOG_WARN(format, ...) LOG(LOG_WARN, format, ## __VA_ARGS__)
-#define LOG_ERROR(format, ...) LOG(LOG_ERROR, format, ## __VA_ARGS__)
+#define vd_printf(format, ...) LOG(INFO, format, ## __VA_ARGS__)
+#define LOG_INFO(format, ...) LOG(INFO, format, ## __VA_ARGS__)
+#define LOG_WARN(format, ...) LOG(WARN, format, ## __VA_ARGS__)
+#define LOG_ERROR(format, ...) LOG(ERROR, format, ## __VA_ARGS__)
 
 #define DBGLEVEL 1000
 
 #define DBG(level, format, ...) do {            \
     if (level <= DBGLEVEL) {                    \
-        LOG(LOG_DEBUG, format, ## __VA_ARGS__); \
+        LOG(DEBUG, format, ## __VA_ARGS__);     \
     }                                           \
 } while(0)
 
