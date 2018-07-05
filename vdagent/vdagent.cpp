@@ -232,6 +232,11 @@ VDAgent::~VDAgent()
 DWORD WINAPI VDAgent::event_thread_proc(LPVOID param)
 {
     VDAgent *agent = static_cast<VDAgent *>(param);
+    // This event is monitored in a separate thread to avoid losing
+    // events as the event is signaled with PulseEvent to wake up all
+    // thread waiting for it.
+    // This event allows to detect desktop switches which do not
+    // change sessions like pressing Ctrl-Alt-Delete.
     HANDLE desktop_event = OpenEvent(SYNCHRONIZE, FALSE, L"WinSta0_DesktopSwitch");
     if (!desktop_event) {
         vd_printf("OpenEvent() failed: %lu", GetLastError());
