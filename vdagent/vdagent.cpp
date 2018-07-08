@@ -238,18 +238,25 @@ DWORD WINAPI VDAgent::event_thread_proc(LPVOID param)
         return 1;
     }
     while (agent->_running) {
-        DWORD wait_ret = WaitForSingleObject(desktop_event, INFINITE);
+        DWORD wait_ret = WaitForSingleObjectEx(desktop_event, INFINITE, TRUE);
         switch (wait_ret) {
         case WAIT_OBJECT_0:
             agent->set_control_event(CONTROL_DESKTOP_SWITCH);
             break;
+        case WAIT_IO_COMPLETION:
+            // handle APC events
+            break;
         case WAIT_TIMEOUT:
         default:
-            vd_printf("WaitForSingleObject(): %lu", wait_ret);
+            vd_printf("WaitForSingleObjectEx(): %lu", wait_ret);
         }
     }
     CloseHandle(desktop_event);
     return 0;
+}
+
+static VOID CALLBACK event_thread_stop_proc(ULONG_PTR)
+{
 }
 
 bool VDAgent::run()
@@ -333,8 +340,12 @@ bool VDAgent::run()
             set_clipboard_owner(owner_none);
         }
     }
-    vd_printf("Agent stopped");
+    if (!QueueUserAPC(event_thread_stop_proc, event_thread, 0)) {
+        TerminateThread(event_thread, 0);
+    }
+    WaitForSingleObject(event_thread, INFINITE);
     CloseHandle(event_thread);
+    vd_printf("Agent stopped");
     return true;
 }
 
