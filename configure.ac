@@ -103,8 +103,17 @@ dnl ---------------------------------------------------------------------------
 dnl - Check library dependencies
 dnl ---------------------------------------------------------------------------
 
-PKG_CHECK_MODULES(LIBPNG, [libpng])
-PKG_CHECK_MODULES(ZLIB, [zlib])
+PKG_CHECK_MODULES_STATIC(LIBPNG, [libpng])
+PKG_CHECK_MODULES_STATIC(ZLIB, [zlib])
+ACX_SET_VAR(CFLAGS, "$CFLAGS $LIBPNG_CFLAGS -Wall",
+  ACX_SET_VAR(LDFLAGS, "$LDFLAGS -static",
+    ACX_SET_VAR(LIBS, "$LIBS $LIBPNG_LIBS",
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <png.h>]], [[
+        return !!png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL)
+      ]])], [], AC_MSG_ERROR([static libpng not found]))
+    )
+  )
+)
 
 dnl ---------------------------------------------------------------------------
 dnl - Makefiles, etc.
