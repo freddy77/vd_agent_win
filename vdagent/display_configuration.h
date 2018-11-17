@@ -56,7 +56,7 @@ public:
     bool query_display_config();
     bool set_display_config(LONG & error);
     bool update_mode_position(LPCTSTR device_name, DEVMODE* dev_mode);
-    bool update_mode_size(LPCTSTR DeviceNmae, DEVMODE* dev_mode);
+    bool update_mode_size(LPCTSTR device_name, DEVMODE* dev_mode);
     void update_detached_primary_state(LPCTSTR device_name, DISPLAYCONFIG_PATH_INFO * path_info);
     bool set_path_state(LPCTSTR device_name, MONITOR_STATE state);
     bool is_attached(LPCTSTR device_name);
