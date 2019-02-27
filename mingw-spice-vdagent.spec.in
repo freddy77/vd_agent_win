@@ -2,7 +2,7 @@
 
 #define _version_suffix -e198
 
-%if "%{_build_arch}" == "x86_64" && (0%{?fedora} && 0%{?fedora} >= 24)
+%if "%{_build_arch}" == "x86_64" && 0%{?fedora}
     %define can_do_check_x64 1
     %define can_do_check_x86 1
 %else
