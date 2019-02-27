@@ -42,7 +42,7 @@ bool AsUser::begin()
         ret = WTSQueryUserToken(_session_id, &_token);
         if (!ret) {
             vd_printf("WTSQueryUserToken failed -- %lu", GetLastError());
-        return false;
+            return false;
         }
     }
 
