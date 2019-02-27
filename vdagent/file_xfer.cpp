@@ -48,10 +48,27 @@ FileXfer::~FileXfer()
 {
 }
 
+typedef HRESULT WINAPI
+SHGetKnownFolderPath_type(REFKNOWNFOLDERID rfid, DWORD dwFlags,
+                          HANDLE hToken, PWSTR *ppszPath);
+
 static bool get_download_directory(TCHAR file_path[MAX_PATH])
 {
-    if (FAILED(SHGetFolderPath(NULL, CSIDL_DESKTOPDIRECTORY | CSIDL_FLAG_CREATE, NULL,
-            SHGFP_TYPE_CURRENT, file_path))) {
+    file_path[0] = 0;
+    PWSTR path;
+    HMODULE shell32 = GetModuleHandle(L"shell32.dll");
+    SHGetKnownFolderPath_type *SHGetKnownFolderPath_p =
+        (SHGetKnownFolderPath_type *) GetProcAddress(shell32, "SHGetKnownFolderPath");
+    if (SHGetKnownFolderPath_p &&
+        SUCCEEDED(SHGetKnownFolderPath_p(FOLDERID_Downloads, 0, NULL, &path))) {
+        if (_tcslen(path) < MAX_PATH) {
+            _tcscpy(file_path, path);
+        }
+        CoTaskMemFree(path);
+    }
+    if (file_path[0] == 0 &&
+        FAILED(SHGetFolderPath(NULL, CSIDL_DESKTOPDIRECTORY | CSIDL_FLAG_CREATE, NULL,
+                               SHGFP_TYPE_CURRENT, file_path))) {
         vd_printf("failed getting desktop path");
         return false;
     }
