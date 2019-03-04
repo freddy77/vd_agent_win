@@ -1288,8 +1288,7 @@ void VDAgent::dispatch_message(VDAgentMessage* msg, uint32_t port)
         break;
     }
     if (min_size < 0) {
-        vd_printf("Unsupported message type %u size %u", msg->type, msg->size);
-        _running = false;
+        vd_printf("Unsupported message type %u size %u, ignoring", msg->type, msg->size);
         return;
     }
     if (msg->size < (unsigned) min_size) {
