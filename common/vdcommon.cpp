@@ -37,48 +37,6 @@ SystemVersion supported_system_version()
     return SYS_VER_UNSUPPORTED;
 }
 
-#ifndef HAVE_STRCAT_S
-errno_t vdagent_strcat_s(char *strDestination,
-                         size_t numberOfElements,
-                         const char *strSource)
-{
-    if (strDestination == NULL)
-        return EINVAL;
-    if (strSource == NULL) {
-        strDestination[0] = '\0';
-        return EINVAL;
-    }
-    if (strlen(strDestination) + strlen(strSource) + 1 > numberOfElements) {
-        strDestination[0] = '\0';
-        return ERANGE;
-    }
-
-    strcat(strDestination, strSource);
-
-    return 0;
-}
-#endif
-
-#ifndef HAVE_STRCPY_S
-errno_t vdagent_strcpy_s(char *strDestination,
-                         size_t numberOfElements,
-                         const char *strSource)
-{
-    if (strDestination == NULL)
-        return EINVAL;
-    strDestination[0] = '\0';
-    if (strSource == NULL)
-        return EINVAL;
-    if (strlen(strSource) + 1 > numberOfElements) {
-        return ERANGE;
-    }
-
-    strcpy(strDestination, strSource);
-
-    return 0;
-}
-#endif
-
 #ifndef HAVE_SWPRINTF_S
 int vdagent_swprintf_s(wchar_t *buf, size_t len, const wchar_t *format, ...)
 {

@@ -84,32 +84,8 @@ typedef Mutex mutex_t;
  * Currently Visual Studio builds are built with /MT (static mode) such that
  * those functions are not required to be in that dll on the guest.
  */
-#ifdef OLDMSVCRT
-#ifndef _ftime_s
-#define _ftime_s(timeb) _ftime(timeb)
-#endif
-#endif /* OLDMSVCRT */
-
 #ifdef _MSC_VER // compiling with Visual Studio
-#define HAVE_STRCAT_S 1
-#define HAVE_STRCPY_S 1
 #define HAVE_SWPRINTF_S 1
-#endif
-
-#ifdef HAVE_STRCAT_S
-#define vdagent_strcat_s strcat_s
-#else
-errno_t vdagent_strcat_s(char *strDestination,
-                         size_t numberOfElements,
-                         const char *strSource);
-#endif
-
-#ifdef HAVE_STRCPY_S
-#define vdagent_strcpy_s strcpy_s
-#else
-errno_t vdagent_strcpy_s(char *strDestination,
-                         size_t numberOfElements,
-                         const char *strSource);
 #endif
 
 #ifndef HAVE_SWPRINTF_S
