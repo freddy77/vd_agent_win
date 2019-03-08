@@ -440,7 +440,10 @@ bool WDDMInterface::is_attached(DISPLAY_DEVICE* dev_info)
 
 bool WDDMInterface::set_monitor_state(LPCTSTR device_name, DEVMODE* dev_mode, MONITOR_STATE state)
 {
-   return  _ccd.set_path_state(device_name, state);
+    if (_ccd.is_attached(device_name) && state == MONITOR_DETACHED) {
+        turn_monitor_off(device_name);
+    }
+    return  _ccd.set_path_state(device_name, state);
 }
 
 bool WDDMInterface::custom_display_escape(LPCTSTR device_name, DEVMODE* dev_mode)
