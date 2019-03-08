@@ -242,10 +242,10 @@ struct WDDMMonitorConfigEscape {
     {
         _ioctl = QXL_ESCAPE_MONITOR_CONFIG;
         _head.id = _head.surface_id = 0;
-        _head.x = mode->get_pos_x();
-        _head.y = mode->get_pos_y();
-        _head.width = mode->get_width();
-        _head.height = mode->get_height();
+        _head.x = mode ? mode->get_pos_x() : 0;
+        _head.y = mode ? mode->get_pos_y() : 0;
+        _head.width = mode ? mode->get_width() : 0;
+        _head.height = mode ? mode->get_height() : 0;
     }
     uint32_t    _ioctl;
     QXLHead     _head;
