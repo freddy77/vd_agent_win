@@ -160,6 +160,7 @@ private:
 
     void close_adapter(D3D_HANDLE handle);
     bool escape(LPCTSTR device_name, void* data, UINT sizeData);
+    bool turn_monitor_off(LPCTSTR device_name);
 
     //GDI Function pointers
     PFND3DKMT_OPENADAPTERFROMHDC _pfnOpen_adapter_hdc;

@@ -488,6 +488,23 @@ bool WDDMInterface::update_monitor_config(LPCTSTR device_name, DisplayMode* disp
 
 }
 
+bool WDDMInterface::turn_monitor_off(LPCTSTR device_name)
+{
+    vd_printf("for %S", device_name);
+    if (!_send_monitors_config) {
+        vd_printf("do nothing as _send_monitors_config is off");
+        return false;
+    }
+
+    WDDMMonitorConfigEscape wddm_escape(NULL);
+    if (escape(device_name, &wddm_escape, sizeof(wddm_escape))) {
+        return true;
+    }
+
+    vd_printf("%S failed", device_name);
+    return false;
+}
+
 LONG WDDMInterface::update_display_settings()
 {
     LONG error(0);
