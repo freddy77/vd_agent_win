@@ -1,0 +1,24 @@
+image: fedora:latest
+
+variables:
+  DEPS_COMMON: git libtool make ImageMagick
+      wine-core.x86_64 wine-core.i686 mingw32-spice-protocol mingw64-spice-protocol
+      mingw32-libpng-static mingw32-zlib-static mingw32-gcc-c++ mingw32-winpthreads-static
+      mingw64-libpng-static mingw64-zlib-static mingw64-gcc-c++ mingw64-winpthreads-static
+
+before_script:
+  - dnf install -y $DEPS_COMMON
+  - autoreconf -if
+  - git submodule update --init --recursive
+
+fedora-mingw32:
+  script:
+  - mingw32-configure
+  - mingw32-make
+  - mingw32-make check
+
+fedora-mingw64:
+  script:
+  - mingw64-configure
+  - mingw64-make
+  - mingw64-make check
