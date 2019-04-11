@@ -1,3 +1,19 @@
+v0.10.0
+=======
+- Introduce turn_monitor_off method of WDDM interface
+- Fix number of displays after reconnection ([rhbz#1477191])
+- Avoid possible integer overflows from reading spice-protocol messages
+- Fix possible buffer overflows while reading from registry
+- Fix loss of mouse movement events
+- file-xfer: only store completed files
+- Some fixes in vcproj file to build with Visual Studio
+- Do not use reserved chars for filenames ([rhbz#1520393])
+- Fix saving BMP file format
+- Various cleanups and code improvements
+
+[rhbz#1477191]: https://bugzilla.redhat.com/show_bug.cgi?id=1477191
+[rhbz#1520393]: https://bugzilla.redhat.com/show_bug.cgi?id=1520393
+
 v0.9.0
 ======
 - remove cximage dependency
