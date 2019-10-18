@@ -39,10 +39,10 @@
       <Directory Id="$(var.ArchProgramFilesFolder)">
         <Directory Id="INSTALLDIR" Name="SPICE agent">
           <Directory Id="Dbindir" Name="bin">
-            <Component Id="CSpiceAgent" Guid="*">
+            <Component Id="CSpiceAgent" Guid="*" Win64="$(var.Win64)">
               <File Id='spiceagent' Name='vdagent.exe' DiskId='1' Source='$(var.DESTDIR)/bin/vdagent.exe' KeyPath='yes'/>
             </Component>
-            <Component Id="CSpiceService" Guid="*">
+            <Component Id="CSpiceService" Guid="*" Win64="$(var.Win64)">
               <File Id='spiceservice' Name='vdservice.exe' DiskId='1' Source='$(var.DESTDIR)/bin/vdservice.exe' KeyPath='yes'/>
               <ServiceInstall Id="ServiceInstall"
                             Name="spice-agent"
