@@ -101,6 +101,7 @@ test_log_win_SOURCES =			\
 	$(NULL)
 
 MANUFACTURER = The Spice Project
+PRODUCT = Spice agent
 
 EXTRA_DIST += spice-vdagent.wxs.in
 CONFIG_STATUS_DEPENDENCIES = spice-vdagent.wxs.in
@@ -108,7 +109,9 @@ CONFIG_STATUS_DEPENDENCIES = spice-vdagent.wxs.in
 spice-vdagent-$(WIXL_ARCH)-$(VERSION)$(BUILDID).msi: spice-vdagent.wxs all
 	$(AM_V_GEN)DESTDIR=`mktemp -d`&&				\
 	make -C $(top_builddir) install DESTDIR=$$DESTDIR >/dev/null &&	\
-	MANUFACTURER="$(MANUFACTURER)" wixl -D SourceDir=$(prefix)	\
+	  MANUFACTURER="$(MANUFACTURER)" PRODUCT="$(PRODUCT)"           \
+	  INSTALLDIRECTORY="$(PRODUCT)" BINDIRECTORY=bin                \
+	  wixl -D SourceDir=$(prefix)                                   \
 	  -D DESTDIR=$$DESTDIR$(prefix)					\
 	  --arch $(WIXL_ARCH)  -o $@ $<
 

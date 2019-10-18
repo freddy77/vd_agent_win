@@ -15,7 +15,7 @@
       <?define Win64 = "no"?>
   <?endif?>
 
-  <Product Id="*" Name="Spice agent @VERSION@@BUILDID@ ($(var.ArchString))"
+  <Product Id="*" Name="$(env.PRODUCT) @VERSION@@BUILDID@ ($(var.ArchString))"
            Manufacturer="$(env.MANUFACTURER)"
            Version="$(var.Version)" UpgradeCode="$(var.UpgradeCode)"
            Language="1033">
@@ -37,8 +37,8 @@
 
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="$(var.ArchProgramFilesFolder)">
-        <Directory Id="INSTALLDIR" Name="SPICE agent">
-          <Directory Id="Dbindir" Name="bin">
+        <Directory Id="INSTALLDIR" Name="$(env.INSTALLDIRECTORY)">
+          <Directory Id="Dbindir" Name="$(env.BINDIRECTORY)">
             <Component Id="CSpiceAgent" Guid="*" Win64="$(var.Win64)">
               <File Id='spiceagent' Name='vdagent.exe' DiskId='1' Source='$(var.DESTDIR)/bin/vdagent.exe' KeyPath='yes'/>
             </Component>
@@ -46,7 +46,7 @@
               <File Id='spiceservice' Name='vdservice.exe' DiskId='1' Source='$(var.DESTDIR)/bin/vdservice.exe' KeyPath='yes'/>
               <ServiceInstall Id="ServiceInstall"
                             Name="spice-agent"
-                            DisplayName="Spice agent"
+                            DisplayName="$(env.PRODUCT)"
                             Description="The Spice guest agent"
                             Type="ownProcess"
                             Start="auto"
