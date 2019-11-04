@@ -32,12 +32,6 @@ enum PATH_STATE {
     PATH_CURRENT,
 };
 
-enum DISPLAYCONFIG_TOPOLOGY_ID {};
-
-struct DISPLAYCONFIG_DEVICE_INFO_HEADER;
-struct DISPLAYCONFIG_MODE_INFO;
-struct DISPLAYCONFIG_PATH_INFO;
-
 //Makes calls into the CCD API for getting/setting display settings on WDDM drivers
 //Use is exclusive to wddm display config class
 

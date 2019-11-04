@@ -8,6 +8,7 @@ AM_CPPFLAGS = 				\
 	-DUNICODE 			\
 	-D_UNICODE			\
 	-DOLDMSVCRT			\
+	-DWINVER=0x0601			\
 	-I$(top_srcdir)/common		\
 	-I$(top_srcdir)/spice-protocol	\
 	$(NULL)
