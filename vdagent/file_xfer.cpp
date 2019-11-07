@@ -48,6 +48,16 @@ FileXfer::~FileXfer()
 {
 }
 
+static bool get_download_directory(TCHAR file_path[MAX_PATH])
+{
+    if (FAILED(SHGetFolderPath(NULL, CSIDL_DESKTOPDIRECTORY | CSIDL_FLAG_CREATE, NULL,
+            SHGFP_TYPE_CURRENT, file_path))) {
+        vd_printf("failed getting desktop path");
+        return false;
+    }
+    return true;
+}
+
 void FileXfer::handle_start(VDAgentFileXferStartMessage* start,
                             VDAgentFileXferStatusMessage* status)
 {
@@ -77,9 +87,7 @@ void FileXfer::handle_start(VDAgentFileXferStartMessage* start,
         return;
     }
 
-    if (FAILED(SHGetFolderPath(NULL, CSIDL_DESKTOPDIRECTORY | CSIDL_FLAG_CREATE, NULL,
-            SHGFP_TYPE_CURRENT, file_path))) {
-        vd_printf("failed getting desktop path");
+    if (!get_download_directory(file_path)) {
         return;
     }
     if (!GetDiskFreeSpaceEx(file_path, &free_bytes, NULL, NULL)) {
