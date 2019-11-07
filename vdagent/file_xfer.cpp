@@ -32,6 +32,7 @@
 
 #include "file_xfer.h"
 #include "as_user.h"
+#include "shell.h"
 
 #define FILENAME_RESERVED_CHAR_LIST \
     ":" /* streams and devices */ \
@@ -218,6 +219,20 @@ void FileXferTask::success()
         CloseHandle(handle);
         handle = INVALID_HANDLE_VALUE;
     }
+
+    // open download directory
+    AsUser as_user;
+    if (!as_user.begin()) {
+        vd_printf("as_user failed");
+        return;
+    }
+
+    TCHAR file_path[MAX_PATH];
+    if (!get_download_directory(file_path)) {
+        return;
+    }
+
+    open_shell_directory(file_path);
 }
 
 void FileXfer::handle_status(VDAgentFileXferStatusMessage* status)

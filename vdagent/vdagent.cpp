@@ -423,6 +423,18 @@ void VDAgent::input_desktop_message_loop()
     }
     CloseDesktop(hdesk);
 
+    if (FAILED(CoInitialize(NULL))) {
+        vd_printf("CoInitialize failed");
+        _running = false;
+        return;
+    }
+    struct ComDeinit {
+        ~ComDeinit()
+        {
+            CoUninitialize();
+        }
+    } com_deinit;
+
     // loading the display settings for the current session's logged on user only
     // after 1) we receive logon event, and 2) the desktop switched from Winlogon
     if (_tcscmp(desktop_name, TEXT("Winlogon")) == 0) {
