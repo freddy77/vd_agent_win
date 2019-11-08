@@ -103,6 +103,14 @@ test_log_win_SOURCES =			\
 	common/test-log.cpp		\
 	$(NULL)
 
+check_PROGRAMS += test-shell-win
+TESTS += test-shell
+test_shell_win_LDFLAGS = $(AM_LDFLAGS) -Wl,--subsystem,console
+test_shell_win_LDADD = -luuid -lole32 -loleaut32
+test_shell_win_SOURCES = \
+	vdagent/test-shell.cpp \
+	$(NULL)
+
 MANUFACTURER = The Spice Project
 PRODUCT = Spice agent
 
