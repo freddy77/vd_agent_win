@@ -46,14 +46,8 @@ VDLog* VDLog::get(TCHAR* path)
     if (_log || !path) {
         return _log;
     }
-    DWORD size = 0;
-    HANDLE file = CreateFile(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
-                             NULL);
-    if (file != INVALID_HANDLE_VALUE) {
-        size = GetFileSize(file, NULL);
-        CloseHandle(file);
-    }
-    if (size != INVALID_FILE_SIZE && size > LOG_ROLL_SIZE) {
+    __stat64 buf;
+    if (_wstat64(path, &buf) == 0 && buf.st_size > LOG_ROLL_SIZE) {
         TCHAR roll_path[MAX_PATH];
         swprintf_s(roll_path, MAX_PATH, L"%s.1", path);
         if (!MoveFileEx(path, roll_path, MOVEFILE_REPLACE_EXISTING)) {
